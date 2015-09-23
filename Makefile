@@ -5,7 +5,7 @@ endif
 
 
 # Compiler and linker flags
-CC = c++
+CC = g++
 INCLUDE = -Iinclude/ -I$(shell root-config --incdir)
 OPFLAGS = -O2
 CFLAGS = -Wall -Wextra -fPIC -std=c++11 $(INCLUDE) $(OPFLAGS)
@@ -28,9 +28,9 @@ all: libHepPlotUtils.so
 libHepPlotUtils.so: $(OBJECTS)
 	@ mkdir -p lib/
 	@ rm -f lib/$@
-	@ $(CC) -shared -Wl,-install_name,$@.1 -o $@.1.0 $+
+	@ $(CC) -shared -Wl,-soname,$@.1 -o $@.1.0 $+
 	@ mv $@.1.0 lib/
-	@ ln -sf $@.1.0 lib/$@
+	@ ln -sf $@.1.0 lib/$@.1; ln -sf $@.1 lib/$@
 
 %.o: %.cpp
 	@ $(CC) $(CFLAGS) -c $< -o $@

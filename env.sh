@@ -1,3 +1,3 @@
 #!/bin/sh
 
-export HEP_PLOT_UTILITIES_INSTALL=$(pwd)
+export HEP_PLOT_UTILS_INSTALL=$(pwd)
