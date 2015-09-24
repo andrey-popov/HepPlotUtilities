@@ -43,10 +43,21 @@ TCanvas &DataMCPlot::Draw()
     gStyle->SetStripDecimals(false);
     TGaxis::SetMaxDigits(3);
     
+    gStyle->SetTitleFont(42);
+    gStyle->SetTitleFontSize(0.04);
+    gStyle->SetTitleFont(42, "XYZ");
+    gStyle->SetTitleXOffset(0.9);
+    gStyle->SetTitleYOffset(1.0);
+    gStyle->SetTitleSize(0.045, "XYZ");
+    gStyle->SetLabelFont(42, "XYZ");
+    gStyle->SetLabelOffset(0.007, "XYZ");
+    gStyle->SetLabelSize(0.04, "XYZ");
+    gStyle->SetNdivisions(508, "XYZ");
+    
     
     // Setup layout of pads within the canvas
     // Allow space for the residuals plot if requested
-    double const bottomSpacing = (plotResiduals) ? 0.2 : 0.;
+    double const bottomSpacing = (plotResiduals) ? 0.17 : 0.;
     
     // Margin for axis labels
     double const margin = 0.1;
@@ -89,10 +100,10 @@ TCanvas &DataMCPlot::Draw()
     // Create  and draw a legend
     TLegend *legend =
      NewOwnedObject<TLegend>(0.86, 0.9 - 0.04 * (mcHists.size() + ((dataHist) ? 1 : 0)), 0.99, 0.9);
-    /**///TLegend legend(0.9, 0.1, 1., 1.);
     legend->SetFillColor(kWhite);
     legend->SetTextFont(42);
     legend->SetTextSize(0.03);
+    legend->SetBorderSize(0);
     
     if (dataHist)
         legend->AddEntry(dataHist.get(), dataHist->GetTitle(), "p");
@@ -173,7 +184,7 @@ TCanvas &DataMCPlot::Draw()
         
         // Decoration of the residuals histogram
         residualsHist->SetMinimum(-0.25);
-        residualsHist->SetMaximum(0.25);
+        residualsHist->SetMaximum(0.28);
         
         residualsHist->SetMarkerStyle(20);
         residualsHist->SetLineColor(kBlack);
@@ -192,9 +203,9 @@ TCanvas &DataMCPlot::Draw()
         yAxis->SetLabelSize(mcStack->GetXaxis()->GetLabelSize() *
          mainPad->GetHNDC() / residualsPad->GetHNDC());
         
-        yAxis->SetNdivisions(405);
+        yAxis->SetNdivisions(403);
         yAxis->CenterTitle();
-        yAxis->SetTitleOffset(0.5);
+        yAxis->SetTitleOffset(0.33);
         xAxis->SetTickLength(xAxis->GetTickLength() * (1. - 2. * margin - bottomSpacing) /
          bottomSpacing);
         
@@ -229,7 +240,7 @@ void DataMCPlot::AddCMSLabel(string const &additionalText /*= ""*/)
     ostringstream label;
     label << "#scale[1.2]{#font[62]{CMS}} #font[52]{" << additionalText << "}";
     
-    TLatex *cmsLabel = NewOwnedObject<TLatex>(0.15, 0.91, label.str().c_str());
+    TLatex *cmsLabel = NewOwnedObject<TLatex>(0.16, 0.91, label.str().c_str());
     cmsLabel->SetNDC();
     cmsLabel->SetTextFont(42);
     cmsLabel->SetTextSize(0.04);
