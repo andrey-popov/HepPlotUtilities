@@ -34,6 +34,29 @@ DataMCPlot::~DataMCPlot()
 }
 
 
+void DataMCPlot::NormalizeMCToData(bool isDensity)
+{
+    // Normalization of histograms will be found using TH1::Integral. If the histograms represent
+    //event density, an option "width" should be given to the method
+    string const integrationOption((isDensity) ? "width" : "");
+    
+    
+    // Calculate integrals
+    double const dataIntegral = dataHist->Integral(0, -1, integrationOption.c_str());
+    double mcIntegral = 0.;
+    
+    for (auto const &h: mcHists)
+        mcIntegral += h->Integral(0, -1, integrationOption.c_str());
+    
+    
+    // Rescale MC histograms
+    double const factor = dataIntegral / mcIntegral;
+    
+    for (auto &h: mcHists)
+        h->Scale(factor);
+}
+
+
 TCanvas &DataMCPlot::Draw()
 {
     // Global decoration settings

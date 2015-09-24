@@ -33,6 +33,16 @@ public:
     ~DataMCPlot();
     
 public:
+    /**
+     * \brief Rescales all MC histograms so that the total expectation equals normalization of data
+     * 
+     * The method must be called before the figure is drawn. If the argument is true, the histograms
+     * are assumed to represent event density, and the normalization is calculated taking bin widths
+     * into account. If the argument is false, the normalization is simply calculated as a sum of
+     * content of all bins. In both cases under- and overflow bins are taken into account.
+     */
+    void NormalizeMCToData(bool isDensity);
+    
     /// Draw the figure
     TCanvas &Draw();
     
