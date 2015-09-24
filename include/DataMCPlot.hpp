@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <list>
+#include <utility>
 
 
 /**
@@ -42,6 +43,14 @@ public:
      * content of all bins. In both cases under- and overflow bins are taken into account.
      */
     void NormalizeMCToData(bool isDensity);
+    
+    /**
+     * \brief Enables or disables plotting of the residuals
+     * 
+     * The method must be called before the figure is drawn. The last two arguments define the
+     * range for the residuals.
+     */
+    void RequestResiduals(bool plotResiduals, double min = -0.25, double max = 0.28);
     
     /// Draw the figure
     TCanvas &Draw();
@@ -92,6 +101,13 @@ private:
     
     /// Indicates if the data/MC residuals should be plotted
     bool plotResiduals;
+    
+    /**
+     * \brief Range for residuals
+     * 
+     * First value is the minimum, second one is the maximum.
+     */
+    std::pair<double, double> residualsRange;
     
     /// Canvas to host the figure
     std::unique_ptr<TCanvas> canvas;

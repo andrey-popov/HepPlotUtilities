@@ -19,7 +19,7 @@ using namespace std;
 
 
 DataMCPlot::DataMCPlot(string const &srcFileName, string const &dirName /*= ""*/):
-    plotResiduals(true)
+    plotResiduals(true), residualsRange(-0.25, 0.28)
 {
     ReadFile(srcFileName, dirName);
 }
@@ -54,6 +54,15 @@ void DataMCPlot::NormalizeMCToData(bool isDensity)
     
     for (auto &h: mcHists)
         h->Scale(factor);
+}
+
+
+void DataMCPlot::RequestResiduals(bool plotResiduals_, double min /*= -0.25*/,
+ double max /*= 0.28*/)
+{
+    plotResiduals = plotResiduals_;
+    residualsRange.first = min;
+    residualsRange.second = max;
 }
 
 
@@ -148,9 +157,6 @@ TCanvas &DataMCPlot::Draw()
     
     
     // Plot residuals histogram if needed
-    TPad *residualsPad;
-    TH1 *residualsHist;
-    
     if (plotResiduals)
     {
         // Create a histogram with total MC expectation. Use a pointer rather than an object in
@@ -163,7 +169,7 @@ TCanvas &DataMCPlot::Draw()
         
         
         // Create a histogram with residuals. Again avoid referring to a concrete histogram class
-        residualsHist = (dynamic_cast<TH1 *>(dataHist->Clone("residualsHist")));
+        TH1 *residualsHist = (dynamic_cast<TH1 *>(dataHist->Clone("residualsHist")));
         ownedObjects.emplace_back(residualsHist);
         
         residualsHist->Add(mcTotalHist.get(), -1);
@@ -171,7 +177,7 @@ TCanvas &DataMCPlot::Draw()
                 
         
         // Create a pad to draw residuals
-        residualsPad = NewOwnedObject<TPad>("residualsPad", "", 0., 0., mainPadWidth + margin,
+        TPad *residualsPad = NewOwnedObject<TPad>("residualsPad", "", 0., 0., mainPadWidth + margin,
          bottomSpacing + margin);
         
         
@@ -206,8 +212,8 @@ TCanvas &DataMCPlot::Draw()
         
         
         // Decoration of the residuals histogram
-        residualsHist->SetMinimum(-0.25);
-        residualsHist->SetMaximum(0.28);
+        residualsHist->SetMinimum(residualsRange.first);
+        residualsHist->SetMaximum(residualsRange.second);
         
         residualsHist->SetMarkerStyle(20);
         residualsHist->SetLineColor(kBlack);
@@ -226,7 +232,7 @@ TCanvas &DataMCPlot::Draw()
         yAxis->SetLabelSize(mcStack->GetXaxis()->GetLabelSize() *
          mainPad->GetHNDC() / residualsPad->GetHNDC());
         
-        yAxis->SetNdivisions(403);
+        yAxis->SetNdivisions(404);
         yAxis->CenterTitle();
         yAxis->SetTitleOffset(0.33);
         xAxis->SetTickLength(xAxis->GetTickLength() * (1. - 2. * margin - bottomSpacing) /
