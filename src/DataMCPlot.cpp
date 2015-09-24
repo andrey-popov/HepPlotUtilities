@@ -46,7 +46,7 @@ shared_ptr<TCanvas> DataMCPlot::Draw()
     
     
     // Create a canvas and pads to draw in
-    shared_ptr<TCanvas> canvas(new TCanvas("canvas", "", 1500, 1000 / (1. - bottomSpacing)));
+    TCanvas canvas("canvas", "", 1500, 1000 / (1. - bottomSpacing));
     
     TPad mainPad("mainPad", "", 0., bottomSpacing, mainPadWidth + margin, 1.);
     mainPad.SetTicks();
@@ -89,7 +89,7 @@ shared_ptr<TCanvas> DataMCPlot::Draw()
     
     
     // Draw the legend
-    canvas->cd();
+    canvas.cd();
     legend.Draw();
     
     
@@ -144,7 +144,7 @@ shared_ptr<TCanvas> DataMCPlot::Draw()
         
         
         // Draw the pad
-        canvas->cd();
+        canvas.cd();
         residualsPad->Draw();
         
         
@@ -203,8 +203,11 @@ shared_ptr<TCanvas> DataMCPlot::Draw()
     }
     
     
-    /**///canvas->Print("figure.png");
-    return canvas;
+    /**///canvas.Print("figure.png");
+    
+    // Return a copy of the canvas since all objects drawn in the original canvas will be deleted
+    //at the exit of this method or when this object is destroyed
+    return shared_ptr<TCanvas>(dynamic_cast<TCanvas *>(canvas.Clone()));
 }
 
 
