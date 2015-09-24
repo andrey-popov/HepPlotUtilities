@@ -3,10 +3,15 @@ ifeq ($(shell which root-config), )
   $(error ROOT installation is not found)
 endif
 
+# Make sure Boost is available
+ifeq ($(BOOST_ROOT), )
+  $(error Mandatory variable BOOST_ROOT is not defined)
+endif
+
 
 # Compiler and linker flags
 CC = g++
-INCLUDE = -Iinclude/ -I$(shell root-config --incdir)
+INCLUDE = -Iinclude/ -I$(shell root-config --incdir) -I$(BOOST_ROOT)/include/
 OPFLAGS = -O2
 CFLAGS = -Wall -Wextra -fPIC -std=c++11 $(INCLUDE) $(OPFLAGS)
 
