@@ -5,6 +5,7 @@
 #include <TObjString.h>
 #include <THStack.h>
 #include <TLegend.h>
+#include <TLatex.h>
 #include <TStyle.h>
 #include <TGaxis.h>
 
@@ -216,6 +217,43 @@ TCanvas &DataMCPlot::Draw()
     
     
     return *canvas;
+}
+
+
+void DataMCPlot::AddCMSLabel(string const &additionalText /*= ""*/)
+{
+    if (not canvas)
+        throw logic_error("Cannot add CMS label before the figure is drawn.");
+    
+    
+    ostringstream label;
+    label << "#scale[1.2]{#font[62]{CMS}} #font[52]{" << additionalText << "}";
+    
+    TLatex *cmsLabel = NewOwnedObject<TLatex>(0.15, 0.91, label.str().c_str());
+    cmsLabel->SetNDC();
+    cmsLabel->SetTextFont(42);
+    cmsLabel->SetTextSize(0.04);
+    cmsLabel->SetTextAlign(11);
+    
+    canvas->cd();
+    cmsLabel->Draw();
+}
+
+
+void DataMCPlot::AddEnergyLabel(string const &text)
+{
+    if (not canvas)
+        throw logic_error("Cannot add energy label before the figure is drawn.");
+    
+    
+    TLatex *energyLabel = NewOwnedObject<TLatex>(0.85, 0.91, text.c_str());
+    energyLabel->SetNDC();
+    energyLabel->SetTextFont(42);
+    energyLabel->SetTextSize(0.04);
+    energyLabel->SetTextAlign(31);
+    
+    canvas->cd();
+    energyLabel->Draw();
 }
 
 

@@ -36,6 +36,23 @@ public:
     /// Draw the figure
     TCanvas &Draw();
     
+    /**
+     * \brief Draws CMS label in the upper left part of the figure
+     * 
+     * The figure must have been drawn before calling this method. The additional text provided as
+     * the argument is written after the CMS label using a different font. Typical examples are
+     * "Simulation", "Preliminary".
+     */
+    void AddCMSLabel(std::string const &additionalText = "");
+    
+    /**
+     * \brief Draws a label with energy in the upper right part of the figure
+     * 
+     * The figure must have been drawn before calling this method. The text can be arbitrary, but
+     * typical format is "20 fb^{-1} (8 TeV)".
+     */
+    void AddEnergyLabel(std::string const &text);
+    
 private:
     /// Reads histograms from a ROOT file
     void ReadFile(std::string const &srcFileName, std::string const &dirName);
