@@ -24,7 +24,16 @@ DataMCPlot::DataMCPlot(string const &srcFileName, string const &dirName /*= ""*/
 }
 
 
-shared_ptr<TCanvas> DataMCPlot::Draw()
+DataMCPlot::~DataMCPlot()
+{
+    // Delete owned ROOT objects associated with the canvas in a reversed order with respect to
+    //creation
+    for (auto objIt = ownedObjects.rbegin(); objIt != ownedObjects.rend(); ++objIt)
+        delete *objIt;
+}
+
+
+TCanvas &DataMCPlot::Draw()
 {
     // Global decoration settings
     gStyle->SetErrorX(0.);
@@ -46,65 +55,66 @@ shared_ptr<TCanvas> DataMCPlot::Draw()
     
     
     // Create a canvas and pads to draw in
-    TCanvas canvas("canvas", "", 1500, 1000 / (1. - bottomSpacing));
+    canvas.reset(new TCanvas("canvas", "", 1500, 1000 / (1. - bottomSpacing)));
     
-    TPad mainPad("mainPad", "", 0., bottomSpacing, mainPadWidth + margin, 1.);
-    mainPad.SetTicks();
+    TPad *mainPad =
+     NewOwnedObject<TPad>("mainPad", "", 0., bottomSpacing, mainPadWidth + margin, 1.);
+    mainPad->SetTicks();
     
     // Adjust margins to host axis labels (otherwise they would be cropped)
-    mainPad.SetLeftMargin(margin / mainPad.GetWNDC());
-    mainPad.SetRightMargin(margin / mainPad.GetWNDC());
-    mainPad.SetBottomMargin(margin / mainPad.GetHNDC());
-    mainPad.SetTopMargin(margin / mainPad.GetHNDC());
+    mainPad->SetLeftMargin(margin / mainPad->GetWNDC());
+    mainPad->SetRightMargin(margin / mainPad->GetWNDC());
+    mainPad->SetBottomMargin(margin / mainPad->GetHNDC());
+    mainPad->SetTopMargin(margin / mainPad->GetHNDC());
     
-    mainPad.Draw();
+    mainPad->Draw();
     
     
     // Put MC histogramss into a stack
-    THStack mcStack("mcStack", title.c_str());
+    THStack *mcStack = NewOwnedObject<THStack>("mcStack", title.c_str());
     
     for (auto h = mcHists.crbegin(); h != mcHists.crend(); ++h)
-        mcStack.Add(h->get(), "hist");
-    
-    
-    // Create a legend
-    TLegend legend(0.86, 0.9 - 0.04 * (mcHists.size() + ((dataHist) ? 1 : 0)), 0.99, 0.9);
-    legend.SetFillColor(kWhite);
-    legend.SetTextFont(42);
-    legend.SetTextSize(0.03);
-    
-    if (dataHist)
-        legend.AddEntry(dataHist.get(), dataHist->GetTitle(), "p");
-    
-    for (auto const &h: mcHists)
-        legend.AddEntry(h.get(), h->GetTitle(), "f");
+        mcStack->Add(h->get(), "hist");
     
     
     // Draw the MC stack and the data histogram
-    mainPad.cd();
-    mcStack.Draw();
+    mainPad->cd();
+    mcStack->Draw();
     
     if (dataHist)
         dataHist->Draw("p0 e1 same");
     
     
-    // Draw the legend
-    canvas.cd();
-    legend.Draw();
+    // Create  and draw a legend
+    TLegend *legend =
+     NewOwnedObject<TLegend>(0.86, 0.9 - 0.04 * (mcHists.size() + ((dataHist) ? 1 : 0)), 0.99, 0.9);
+    /**///TLegend legend(0.9, 0.1, 1., 1.);
+    legend->SetFillColor(kWhite);
+    legend->SetTextFont(42);
+    legend->SetTextSize(0.03);
+    
+    if (dataHist)
+        legend->AddEntry(dataHist.get(), dataHist->GetTitle(), "p");
+    
+    for (auto const &h: mcHists)
+        legend->AddEntry(h.get(), h->GetTitle(), "f");
+    
+    canvas->cd();
+    legend->Draw();
     
     
     // Update the maximum
     if (dataHist)
     {
-        double const histMax = 1.1 * max(mcStack.GetMaximum(), dataHist->GetMaximum());
-        mcStack.SetMaximum(histMax);
+        double const histMax = 1.1 * max(mcStack->GetMaximum(), dataHist->GetMaximum());
+        mcStack->SetMaximum(histMax);
         dataHist->SetMaximum(histMax);
     }
     
     
     // Plot residuals histogram if needed
-    unique_ptr<TPad> residualsPad;
-    unique_ptr<TH1> residualsHist;
+    TPad *residualsPad;
+    TH1 *residualsHist;
     
     if (plotResiduals)
     {
@@ -118,14 +128,16 @@ shared_ptr<TCanvas> DataMCPlot::Draw()
         
         
         // Create a histogram with residuals. Again avoid referring to a concrete histogram class
-        residualsHist.reset((dynamic_cast<TH1 *>(dataHist->Clone("residualsHist"))));
+        residualsHist = (dynamic_cast<TH1 *>(dataHist->Clone("residualsHist")));
+        ownedObjects.emplace_back(residualsHist);
+        
         residualsHist->Add(mcTotalHist.get(), -1);
         residualsHist->Divide(mcTotalHist.get());
                 
         
         // Create a pad to draw residuals
-        residualsPad.reset(new TPad("residualsPad", "", 0., 0., mainPadWidth + margin,
-         bottomSpacing + margin));
+        residualsPad = NewOwnedObject<TPad>("residualsPad", "", 0., 0., mainPadWidth + margin,
+         bottomSpacing + margin);
         
         
         // Adjust the pad's margins so that axis labels are not cropped
@@ -144,7 +156,7 @@ shared_ptr<TCanvas> DataMCPlot::Draw()
         
         
         // Draw the pad
-        canvas.cd();
+        canvas->cd();
         residualsPad->Draw();
         
         
@@ -170,14 +182,14 @@ shared_ptr<TCanvas> DataMCPlot::Draw()
         
         // Make axis label and titles of same size as in the main pad (the actual text size for the
         //default font is linked up with the current pad's smallest dimension)
-        xAxis->SetTitleSize(mcStack.GetXaxis()->GetTitleSize() *
-         mainPad.GetHNDC() / residualsPad->GetHNDC());
-        xAxis->SetLabelSize(mcStack.GetXaxis()->GetLabelSize() *
-         mainPad.GetHNDC() / residualsPad->GetHNDC());
-        yAxis->SetTitleSize(mcStack.GetXaxis()->GetTitleSize() *
-         mainPad.GetHNDC() / residualsPad->GetHNDC());
-        yAxis->SetLabelSize(mcStack.GetXaxis()->GetLabelSize() *
-         mainPad.GetHNDC() / residualsPad->GetHNDC());
+        xAxis->SetTitleSize(mcStack->GetXaxis()->GetTitleSize() *
+         mainPad->GetHNDC() / residualsPad->GetHNDC());
+        xAxis->SetLabelSize(mcStack->GetXaxis()->GetLabelSize() *
+         mainPad->GetHNDC() / residualsPad->GetHNDC());
+        yAxis->SetTitleSize(mcStack->GetXaxis()->GetTitleSize() *
+         mainPad->GetHNDC() / residualsPad->GetHNDC());
+        yAxis->SetLabelSize(mcStack->GetXaxis()->GetLabelSize() *
+         mainPad->GetHNDC() / residualsPad->GetHNDC());
         
         yAxis->SetNdivisions(405);
         yAxis->CenterTitle();
@@ -199,15 +211,11 @@ shared_ptr<TCanvas> DataMCPlot::Draw()
         
         
         // Remove the labels from x axis of the main histogram
-        mcStack.GetXaxis()->SetLabelOffset(999.);
+        mcStack->GetXaxis()->SetLabelOffset(999.);
     }
     
     
-    /**///canvas.Print("figure.png");
-    
-    // Return a copy of the canvas since all objects drawn in the original canvas will be deleted
-    //at the exit of this method or when this object is destroyed
-    return shared_ptr<TCanvas>(dynamic_cast<TCanvas *>(canvas.Clone()));
+    return *canvas;
 }
 
 
