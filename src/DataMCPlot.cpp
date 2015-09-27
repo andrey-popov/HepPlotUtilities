@@ -19,7 +19,8 @@ using namespace std;
 
 
 DataMCPlot::DataMCPlot(string const &srcFileName, string const &dirName /*= ""*/):
-    plotResiduals(true), residualsRange(-0.25, 0.28)
+    plotResiduals(true), residualsRange(-0.25, 0.28),
+    drawSystematics(false)
 {
     ReadFile(srcFileName, dirName);
 }
@@ -74,9 +75,22 @@ void DataMCPlot::NormalizeMCToData(bool isDensity)
     
     // Rescale MC histograms
     double const factor = dataIntegral / mcIntegral;
+    mcTotalHist->Scale(factor);
     
     for (auto &h: mcHists)
         h->Scale(factor);
+    
+    
+    // Rescale band with systematical uncertainties
+    for (int i = 0; i < systError->GetN(); ++i)
+    {
+        double x, y;
+        systError->GetPoint(i, x, y);
+        systError->SetPoint(i, x, y * factor);
+        
+        systError->SetPointEYhigh(i, systError->GetErrorYhigh(i));
+        systError->SetPointEYlow(i, systError->GetErrorYlow(i));
+    }
 }
 
 
@@ -86,6 +100,14 @@ void DataMCPlot::RequestResiduals(bool plotResiduals_, double min /*= -0.25*/,
     plotResiduals = plotResiduals_;
     residualsRange.first = min;
     residualsRange.second = max;
+}
+
+
+void DataMCPlot::RequestSystematics(bool drawSystematics_ /*= true*/,
+ std::string const &legendLabel /*= ""*/)
+{
+    drawSystematics = drawSystematics_;
+    systLegendLabel = legendLabel;
 }
 
 
@@ -179,18 +201,20 @@ TCanvas &DataMCPlot::Draw()
     }
     
     
+    // Draw the systematical uncertainty band
+    if (drawSystematics)
+    {
+        mainPad->cd();
+        systError->Draw("2");
+        
+        if (systLegendLabel != "")
+            legend->AddEntry(systError.get(), systLegendLabel.c_str(), "f");
+    }
+    
+    
     // Plot residuals histogram if needed
     if (plotResiduals)
     {
-        // Create a histogram with total MC expectation. Use a pointer rather than an object in
-        //order to infer in terms of the base class
-        auto histIt = mcHists.cbegin();
-        unique_ptr<TH1> mcTotalHist(dynamic_cast<TH1 *>((*histIt)->Clone("mcTotalHist")));
-        
-        for (++histIt; histIt != mcHists.cend(); ++histIt)
-            mcTotalHist->Add(histIt->get());
-        
-        
         // Create a histogram with residuals. Again avoid referring to a concrete histogram class
         TH1 *residualsHist = (dynamic_cast<TH1 *>(dataHist->Clone("residualsHist")));
         ownedObjects.emplace_back(residualsHist);
@@ -277,6 +301,29 @@ TCanvas &DataMCPlot::Draw()
         
         // Remove the labels from x axis of the main histogram
         mcStack->GetXaxis()->SetLabelOffset(999.);
+        
+        
+        // Draw the systematical uncertainty band
+        if (drawSystematics)
+        {
+            TGraphAsymmErrors *systErrorResiduals =
+             NewOwnedObject<TGraphAsymmErrors>(systError->GetN());
+            
+            for (int i = 0; i < systError->GetN(); ++i)
+            {
+                double x, y;
+                systError->GetPoint(i, x, y);
+                systErrorResiduals->SetPoint(i, x, 0.);
+                systErrorResiduals->SetPointEYhigh(i,
+                 systError->GetErrorYhigh(i) / mcTotalHist->GetBinContent(i + 1));
+                systErrorResiduals->SetPointEYlow(i,
+                 systError->GetErrorYlow(i) / mcTotalHist->GetBinContent(i + 1));
+            }
+            
+            systErrorResiduals->SetFillColor(kBlack);
+            systErrorResiduals->SetFillStyle(3354);
+            systErrorResiduals->Draw("2");
+        }
     }
     
     
@@ -435,10 +482,42 @@ void DataMCPlot::ReadFile(std::string const &srcFileName, std::string const &dir
     }
     
     
+    // Create a histogram with total MC expectation
+    auto histIt = mcHists.cbegin();
+    mcTotalHist.reset(dynamic_cast<TH1 *>((*histIt)->Clone("mcTotalHist")));
+    
+    for (++histIt; histIt != mcHists.cend(); ++histIt)
+        mcTotalHist->Add(histIt->get());
+    
+    
     // Remove association of histograms with the source file so that the histogram are not deleted
     //when the file is closed
     dataHist->SetDirectory(nullptr);
+    mcTotalHist->SetDirectory(nullptr);
     
     for (auto &h: mcHists)
         h->SetDirectory(nullptr);
+    
+    
+    // Read systematical uncertainties if present
+    unique_ptr<TH1> systUp(dynamic_cast<TH1 *>(curDirectory->Get("syst_up")));
+    unique_ptr<TH1> systDown(dynamic_cast<TH1 *>(curDirectory->Get("syst_down")));
+    
+    if (systUp and systDown)
+    {
+        systError.reset(new TGraphAsymmErrors(mcTotalHist.get()));
+        systError->SetName("systError");
+        
+        for (int bin = 1; bin <= mcTotalHist->GetNbinsX(); ++bin)
+        {
+            systError->SetPointEYhigh(bin - 1, systUp->GetBinContent(bin));
+            systError->SetPointEYlow(bin - 1, -systDown->GetBinContent(bin));
+            //^ In case of a two-sided variation, contents of the up and down histograms have
+            //opposite signs, but TGraphAsymmErrors makes a two-sided variation if both provided
+            //errors are positive
+        }
+        
+        systError->SetFillColor(kBlack);
+        systError->SetFillStyle(3354);
+    }
 }

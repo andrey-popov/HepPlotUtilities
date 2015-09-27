@@ -1,6 +1,7 @@
 #pragma once
 
 #include <TH1.h>
+#include <TGraphAsymmErrors.h>
 #include <TCanvas.h>
 
 #include <memory>
@@ -62,6 +63,14 @@ public:
      * range for the residuals.
      */
     void RequestResiduals(bool plotResiduals, double min = -0.25, double max = 0.28);
+    
+    /**
+     * \brief Enables or disables drawing of hashed area representing systematical uncertainty
+     * 
+     * The method must be called before the figure is drawn. The second argument is the optional
+     * name for the entry in the legend.
+     */
+    void RequestSystematics(bool drawSystematics = true, std::string const &legendLabel = "");
     
     /// Draw the figure
     TCanvas &Draw();
@@ -132,6 +141,17 @@ private:
     /// MC histograms
     std::list<std::shared_ptr<TH1>> mcHists;
     
+    /// A sum of all MC histograms
+    std::shared_ptr<TH1> mcTotalHist;
+    
+    /**
+     * \brief Band for systematical uncertainty
+     * 
+     * The object is created if and only if the source file contains histograms with systematical
+     * variations.
+     */
+    std::unique_ptr<TGraphAsymmErrors> systError;
+    
     /// Indicates if the data/MC residuals should be plotted
     bool plotResiduals;
     
@@ -141,6 +161,16 @@ private:
      * First value is the minimum, second one is the maximum.
      */
     std::pair<double, double> residualsRange;
+    
+    /// Indicates if systematic uncertainties should be drawn
+    bool drawSystematics;
+    
+    /**
+     * \brief Legend label for systematic uncertainty
+     * 
+     * If the string is empty, the entry is not added to the legend.
+     */
+    std::string systLegendLabel;
     
     /// Canvas to host the figure
     std::unique_ptr<TCanvas> canvas;
