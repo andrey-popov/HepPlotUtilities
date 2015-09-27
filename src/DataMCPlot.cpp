@@ -34,9 +34,26 @@ DataMCPlot::~DataMCPlot()
 }
 
 
-std::string const &DataMCPlot::GetTitle() const
+string const &DataMCPlot::GetTitle() const
 {
     return title;
+}
+
+
+shared_ptr<TH1> DataMCPlot::GetHist(string const &name) const
+{
+    if (name == "data")
+        return dataHist;
+    
+    for (auto const &h: mcHists)
+    {
+        if (name == h->GetName())
+            return h;
+    }
+    
+    
+    // If this point is reached, the requested histogram has not been found
+    return shared_ptr<TH1>();
 }
 
 
@@ -107,8 +124,7 @@ TCanvas &DataMCPlot::Draw()
     // Create a canvas and pads to draw in
     canvas.reset(new TCanvas("canvas", "", 1500, 1000 / (1. - bottomSpacing)));
     
-    TPad *mainPad =
-     NewOwnedObject<TPad>("mainPad", "", 0., bottomSpacing, mainPadWidth + margin, 1.);
+    mainPad.reset(new TPad("mainPad", "", 0., bottomSpacing, mainPadWidth + margin, 1.));
     mainPad->SetTicks();
     
     // Adjust margins to host axis labels (otherwise they would be cropped)
@@ -136,8 +152,9 @@ TCanvas &DataMCPlot::Draw()
     
     
     // Create  and draw a legend
-    TLegend *legend =
-     NewOwnedObject<TLegend>(0.86, 0.9 - 0.04 * (mcHists.size() + ((dataHist) ? 1 : 0)), 0.99, 0.9);
+    legend.reset(new TLegend(0.86, 0.9 - 0.04 * (mcHists.size() + ((dataHist) ? 1 : 0)), 0.99,
+     0.9));
+    legend->SetName("legend");
     legend->SetFillColor(kWhite);
     legend->SetTextFont(42);
     legend->SetTextSize(0.03);
@@ -301,6 +318,36 @@ void DataMCPlot::AddEnergyLabel(string const &text)
     
     canvas->cd();
     energyLabel->Draw();
+}
+
+
+unique_ptr<TLegend> const &DataMCPlot::GetLegend()
+{
+    return legend;
+}
+
+
+unique_ptr<TPad> const &DataMCPlot::GetMainPad()
+{
+    return mainPad;
+}
+
+
+void DataMCPlot::Print(string const &fileName)
+{
+    // If the output is not a ROOT file, simply call TCanvas::Print
+    if (not boost::ends_with(fileName, ".root"))
+    {
+        canvas->Print(fileName.c_str());
+        return;
+    }
+    
+    
+    TFile outFile(fileName.c_str(), "recreate");
+    outFile.cd();
+    canvas->Write();
+    legend->Write();
+    outFile.Close();
 }
 
 

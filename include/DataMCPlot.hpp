@@ -38,6 +38,14 @@ public:
     std::string const &GetTitle() const;
     
     /**
+     * \brief Returns histogram with the given name
+     * 
+     * The method loops over all histograms to find the requested one and thus can be slow. Returns
+     * an empty pointer if the requested histogram is not found.
+     */
+    std::shared_ptr<TH1> GetHist(std::string const &name) const;
+    
+    /**
      * \brief Rescales all MC histograms so that the total expectation equals normalization of data
      * 
      * The method must be called before the figure is drawn. If the argument is true, the histograms
@@ -75,6 +83,28 @@ public:
      */
     void AddEnergyLabel(std::string const &text);
     
+    /**
+     * \brief Returns pointer to the legend
+     * 
+     * The pointer is null before the figure is drawn.
+     */
+    std::unique_ptr<TLegend> const &GetLegend();
+    
+    /**
+     * \brief Returns pointer to the main pad, in which data and MC histograms are drawn
+     * 
+     * The pointer is null before the figure is drawn.
+     */
+    std::unique_ptr<TPad> const &GetMainPad();
+    
+    /**
+     * \brief Prints the canvas to a file
+     * 
+     * This method is preferred to calling Print for the returned canvas since in that case the
+     * legend will not be saved.
+     */
+    void Print(std::string const &fileName);
+    
 private:
     /// Reads histograms from a ROOT file
     void ReadFile(std::string const &srcFileName, std::string const &dirName);
@@ -97,10 +127,10 @@ private:
     std::string title;
     
     /// Histogram with data points
-    std::unique_ptr<TH1> dataHist;
+    std::shared_ptr<TH1> dataHist;
     
     /// MC histograms
-    std::list<std::unique_ptr<TH1>> mcHists;
+    std::list<std::shared_ptr<TH1>> mcHists;
     
     /// Indicates if the data/MC residuals should be plotted
     bool plotResiduals;
@@ -114,6 +144,12 @@ private:
     
     /// Canvas to host the figure
     std::unique_ptr<TCanvas> canvas;
+    
+    /// Pad that hosts the main graph
+    std::unique_ptr<TPad> mainPad;
+    
+    /// Legend
+    std::unique_ptr<TLegend> legend;
     
     /**
      * \brief List of owned ROOT objects to be deleted by the destructor
