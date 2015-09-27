@@ -235,6 +235,7 @@ TCanvas &DataMCPlot::Draw()
         yAxis->SetNdivisions(404);
         yAxis->CenterTitle();
         yAxis->SetTitleOffset(0.33);
+        yAxis->SetLabelOffset(mcStack->GetYaxis()->GetLabelOffset());
         xAxis->SetTickLength(xAxis->GetTickLength() * (1. - 2. * margin - bottomSpacing) /
          bottomSpacing);
         
