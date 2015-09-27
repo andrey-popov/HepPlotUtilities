@@ -34,6 +34,9 @@ public:
     ~DataMCPlot();
     
 public:
+    /// Returns the title of the plot
+    std::string const &GetTitle() const;
+    
     /**
      * \brief Rescales all MC histograms so that the total expectation equals normalization of data
      * 

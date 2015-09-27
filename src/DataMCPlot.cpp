@@ -34,6 +34,12 @@ DataMCPlot::~DataMCPlot()
 }
 
 
+std::string const &DataMCPlot::GetTitle() const
+{
+    return title;
+}
+
+
 void DataMCPlot::NormalizeMCToData(bool isDensity)
 {
     // Normalization of histograms will be found using TH1::Integral. If the histograms represent
