@@ -82,14 +82,17 @@ void DataMCPlot::NormalizeMCToData(bool isDensity)
     
     
     // Rescale band with systematical uncertainties
-    for (int i = 0; i < systError->GetN(); ++i)
+    if (systError)
     {
-        double x, y;
-        systError->GetPoint(i, x, y);
-        systError->SetPoint(i, x, y * factor);
-        
-        systError->SetPointEYhigh(i, systError->GetErrorYhigh(i));
-        systError->SetPointEYlow(i, systError->GetErrorYlow(i));
+        for (int i = 0; i < systError->GetN(); ++i)
+        {
+            double x, y;
+            systError->GetPoint(i, x, y);
+            systError->SetPoint(i, x, y * factor);
+            
+            systError->SetPointEYhigh(i, systError->GetErrorYhigh(i));
+            systError->SetPointEYlow(i, systError->GetErrorYlow(i));
+        }
     }
 }
 
