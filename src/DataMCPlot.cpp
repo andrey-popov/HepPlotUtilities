@@ -308,12 +308,15 @@ TCanvas &DataMCPlot::Draw()
         {
             TGraphAsymmErrors *systErrorResiduals =
              NewOwnedObject<TGraphAsymmErrors>(systError->GetN());
+            systErrorResiduals->SetName("systErrorResiduals");
             
             for (int i = 0; i < systError->GetN(); ++i)
             {
                 double x, y;
                 systError->GetPoint(i, x, y);
                 systErrorResiduals->SetPoint(i, x, 0.);
+                systErrorResiduals->SetPointEXlow(i, systError->GetErrorXlow(i));
+                systErrorResiduals->SetPointEXhigh(i, systError->GetErrorXhigh(i));
                 systErrorResiduals->SetPointEYhigh(i,
                  systError->GetErrorYhigh(i) / mcTotalHist->GetBinContent(i + 1));
                 systErrorResiduals->SetPointEYlow(i,
@@ -322,6 +325,8 @@ TCanvas &DataMCPlot::Draw()
             
             systErrorResiduals->SetFillColor(kBlack);
             systErrorResiduals->SetFillStyle(3354);
+            
+            residualsPad->cd();
             systErrorResiduals->Draw("2");
         }
     }
